@@ -1,6 +1,6 @@
 # execbench: benchmarking execution schedules by implementation shortfall
 
-Built with an LLM coding assistant. I directed the design, ran it on real data and audited the results.
+Built by myself along with support from LLM coding assistant. I directed the design, ran it on real data and audited the results.
 
 **Question.** For a parent order worked over one trading day, how do TWAP, VWAP and
 front-loaded Almgren-Chriss schedules compare on cost and on risk, and how much does an
