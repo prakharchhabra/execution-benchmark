@@ -1,5 +1,7 @@
 # execbench: benchmarking execution schedules by implementation shortfall
 
+Built with an LLM coding assistant. I directed the design, ran it on real data and audited the results.
+
 **Question.** For a parent order worked over one trading day, how do TWAP, VWAP and
 front-loaded Almgren-Chriss schedules compare on cost and on risk, and how much does an
 out-of-sample volume forecast actually help?
@@ -63,8 +65,41 @@ python scripts/run_benchmark.py --data data_synth --out results_synth --syntheti
 
 ## Results
 
-_To be filled in from `results/` after the real-data run. No number goes here that the
-code did not produce._
+12 large-cap US stocks, 1 Oct 2025 to 30 Sep 2026: 2,988 stock-days over 249 dates.
+Two early-close days (28 Nov, 24 Dec 2025) dropped for all symbols.
+
+**Measured (no impact model)**
+
+| | Flat / TWAP | 20-day forecast / VWAP | Reduction (95% CI, by date) |
+|---|---|---|---|
+| Volume in the wrong bucket | 25.4% | 14.8% | 10.6 pts (10.4 to 10.8) |
+| VWAP tracking error, bps | 7.90 | 4.94 | 2.96 (2.60 to 3.29) |
+
+Mean intraday drift on buys was +3.2 bps (CI -1.4 to 7.6): not distinguishable from zero.
+
+**Cost versus risk, order = 5% of ADV** (impact modelled, risk measured)
+
+| Schedule | Impact, bps | Timing risk, bps |
+|---|---|---|
+| TWAP | 7.25 | 105.9 |
+| VWAP forecast | 6.78 | 98.4 |
+| AC kappa=1 | 6.82 | 94.3 |
+| AC kappa=2 | 7.16 | 85.8 |
+| AC kappa=4 | 8.68 | 70.9 |
+| VWAP oracle (uses future data) | 6.49 | 101.6 |
+
+The forecast closes 62.5% (CI 61.6% to 63.4%) of the modelled impact gap between TWAP
+and the oracle. This ratio is independent of eta and order size and stable for beta
+from 0.4 to 1.0 (62.4% to 62.9%).
+
+![Cost versus risk](results/frontier.png)
+
+**A bug the first real-data run exposed.** Early-close days passed the completeness
+filter because liquid stocks print thin after-hours trades until 16:00. It showed up as
+simulated orders exceeding market volume in hundreds of buckets. Fixed with a
+final-hour volume rule and a regression test. 242 capped buckets remain out of roughly
+3.5 million schedule-bucket combinations, almost all for the most front-loaded
+schedule at 10% of ADV on thin days.
 
 ## Tests
 
